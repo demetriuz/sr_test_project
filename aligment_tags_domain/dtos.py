@@ -4,7 +4,7 @@ TAG_TYPE = 'TAG'
 
 
 @attr.s
-class LevelItemDTO:
+class DefinitionLevelOrTagDTO:
     id = attr.ib()
     value = attr.ib()
     description = attr.ib()

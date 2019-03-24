@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 from django.apps import AppConfig
 
 
@@ -11,7 +8,7 @@ class AlignmentTagsConfig(AppConfig):
         self.service = self.get_service()
 
     def get_service(self):
-        from .service import AlignmentTagsService
+        from aligment_tags_domain.service import AlignmentTagsService
         from .dao import AlignmentTagsDAO
         self.service = AlignmentTagsService(AlignmentTagsDAO())
         return self.service

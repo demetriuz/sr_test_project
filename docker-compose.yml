@@ -6,7 +6,15 @@ services:
     command:
       bash -c "./manage.py makemigrations &&
       ./manage.py migrate &&
-      ./manage.py import ./fixtures/example-data-01.csv ./fixtures/example-data-02.csv ./fixtures/example-data-03.csv &&
+      ./manage.py import ./fixtures/example-data-01.csv ./fixtures/example-data-02.csv ./fixtures/example-data-03.csv ./fixtures/example-data-04.csv &&
+      ./manage.py import ./fixtures/example-data-05-duplicates.csv ./fixtures/example-data-06-brokenfile.csv &&
       ./manage.py runserver 0.0.0.0:8000"
+    environment:
+      DJANGO_SETTINGS_MODULE: sr_test_project.settings.settings
+
     ports:
       - "8080:8000"
+
+  test:
+    build: .
+    command: python3 -m pytest -v

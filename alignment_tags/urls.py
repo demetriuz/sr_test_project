@@ -1,9 +1,9 @@
-from django.conf.urls import url
 from django.urls import path
 
 from . import views
 
+app_name = 'alignment_tags'
 
 urlpatterns = [
-    path('levels/', views.Levels.as_view(), name='levels'),
+    path('levels-and-tags/', views.LevelsAndTags.as_view(), name='levels'),
 ]

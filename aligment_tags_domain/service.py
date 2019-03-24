@@ -1,28 +1,23 @@
-from abc import ABCMeta, abstractmethod, abstractproperty
-from typing import Optional, List
+from typing import List, Optional
 
-from .idao import IAlignmentTagsDAO
 from . import dtos
 from . import models as m
+from .idao import IAlignmentTagsDAO
+from .iservice import IAlignmentTagsService
 
 
-class IAlignmentTagsService(metaclass=ABCMeta):
-    @abstractmethod
+class AlignmentTagsService(IAlignmentTagsService):
     def __init__(self, dao: IAlignmentTagsDAO):
-        pass
+        self.dao = dao
 
-    @abstractmethod
     def get_definition_levels_and_tags(self, parent_id: Optional[int] = None) -> List[dtos.DefinitionLevelOrTagDTO]:
-        pass
+        return self.dao.get_levels_and_tags(parent_id)
 
-    @abstractmethod
     def get_or_create_definition_level(self, level: m.DefinitionLevel) -> (m.DefinitionLevel, bool):
-        pass
+        return self.dao.get_or_create_definition_level(level)
 
-    @abstractmethod
     def get_or_create_definition_level_type(self, level_type: m.DefinitionLevelType) -> (m.DefinitionLevelType, bool):
-        pass
+        return self.dao.get_or_create_definition_level_type(level_type)
 
-    @abstractmethod
     def create_tag(self, tag: m.Tag) -> m.Tag:
-        pass
+        return self.dao.create_tag(tag)

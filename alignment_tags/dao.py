@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from django.db import IntegrityError
 
@@ -11,15 +11,15 @@ from . import models as m
 
 
 class AlignmentTagsDAO(IAlignmentTagsDAO):
-    def get_levels(self, parent_id: int) -> List[dtos.LevelItemDTO]:
-        attrs_qs = m.Level.objects.filter(parent_id=parent_id, type__is_internal=False).select_related('type')
+    def get_levels_and_tags(self, parent_id: Optional[int]) -> List[dtos.DefinitionLevelOrTagDTO]:
+        attrs_qs = m.DefinitionLevel.objects.filter(parent_id=parent_id, type__is_internal=False).select_related('type')
         tags_qs = m.Tag.objects.filter(parent_level_id=parent_id)
 
-        return [dtos.LevelItemDTO(id=o.id, value=o.value, type=o.type.name, description=None) for o in attrs_qs] + \
-               [dtos.LevelItemDTO(id=o.id, value=o.code, type=dtos.TAG_TYPE, description=o.description) for o in tags_qs]
+        return [dtos.DefinitionLevelOrTagDTO(id=o.id, value=o.value, type=o.type.name, description=None) for o in attrs_qs] + \
+               [dtos.DefinitionLevelOrTagDTO(id=o.id, value=o.code, type=dtos.TAG_TYPE, description=o.description) for o in tags_qs]
 
-    def get_or_create_level(self, level: domain_models.Level) -> (domain_models.Level, bool):
-        level_, is_created = m.Level.objects.get_or_create(
+    def get_or_create_definition_level(self, level: domain_models.DefinitionLevel) -> (domain_models.DefinitionLevel, bool):
+        level_, is_created = m.DefinitionLevel.objects.get_or_create(
             type_id=level.type_id,
             value=level.value,
             parent_id=level.parent_id
@@ -35,8 +35,8 @@ class AlignmentTagsDAO(IAlignmentTagsDAO):
         tag.id = tag_.id
         return tag
 
-    def get_or_create_level_type(self, level_type: domain_models.LevelType) -> (domain_models.LevelType, bool):
-        level_type_, is_created = m.LevelType.objects.get_or_create(
+    def get_or_create_definition_level_type(self, level_type: domain_models.DefinitionLevelType) -> (domain_models.DefinitionLevelType, bool):
+        level_type_, is_created = m.DefinitionLevelType.objects.get_or_create(
             name=level_type.name,
             is_internal=level_type.is_internal
         )

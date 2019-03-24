@@ -14,78 +14,103 @@
         .tag-display{
             background-color: bisque;
         }
+        #container{
+            margin-left: auto;
+            margin-right: auto;
+            width: 50%;
+            font-family: "Roboto", "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
+            font-size: 1em;
+        }
+        select{
+            font-size: 1em;
+            margin-bottom: 5px;
+        }
+        #tag-display{
+            padding: 1em;
+            min-height: 5em;
+            visibility:hidden;
+        }
     </style>
 </head>
 <body>
 
-<div id="tag-display" class="tag-display hidden"></div>
+<div id="container">
+    <div id="tag-display" class="tag-display"></div>
 
-<label for="select-standard" class="select-standard">Standard</label>
-<select id="select-standard" class="select-standard">
-    <option value="">Select a Standard</option>
-</select>
+    <label for="select-standard" class="select-standard">Education Standard</label>
+    <select id="select-standard" class="select-standard">
+        <option value="">Select a Standard</option>
+    </select>
 
-<label for="select-grade" class="select-grade hidden">Grade</label>
-<select id="select-grade" class="select-grade hidden">
-    <option value="">Select a Grade</option>
-</select>
+    <label for="select-grade" class="select-grade hidden">Grade Level</label>
+    <select id="select-grade" class="select-grade hidden">
+        <option value="">Select a Grade Level</option>
+    </select>
 
-<label for="select-domain" class="select-domain hidden">Domain</label>
-<select id="select-domain" class="select-domain hidden">
-    <option value="">Select a Domain</option>
-</select>
+    <label for="select-domain" class="select-domain hidden">Learning Domain</label>
+    <select id="select-domain" class="select-domain hidden">
+        <option value="">Select a Learning Domain</option>
+    </select>
 
-<label for="select-tag" class="select-tag hidden">Tag</label>
-<select id="select-tag" class="select-tag hidden" data-attr="">
-    <option value="">Select a Tag</option>
-</select>
-
+    <label for="select-tag" class="select-tag hidden">Alignment Tag</label>
+    <select id="select-tag" class="select-tag hidden">
+        <option value="">Select an Alignment Tag</option>
+    </select>
+</div>
 
 <script src="http://code.jquery.com/jquery-3.3.1.min.js"
         integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
         crossorigin="anonymous"></script>
 <script>
+    let api_url = "{% url 'alignment_tags:levels' %}";
+
     let selectHierarchyMap = {
         "select-standard": "select-grade",
         "select-grade": "select-domain",
         "select-domain": "select-tag"
     };
 
-    let categoryToSelectorMap = {
+    let levelTypeToSelectorMap = {
         "STANDARD": "select-standard",
         "GRADE": "select-grade",
         "LEARNING_DOMAIN": "select-domain",
         "TAG": "select-tag"
     };
 
+    let elements = {
+        "select-standard": $("#select-standard"),
+        "select-grade": $("#select-grade"),
+        "select-domain": $("#select-domain"),
+        "select-tag": $("#select-tag"),
+        "tag-display": $("#tag-display")
+    };
 
     function hideAndClearChildrenSelects(id) {
-        $("#tag-display").text("").hide();
+        elements["tag-display"].text("").css("visibility", "hidden");
 
         while (true){
             id = selectHierarchyMap[id];
+
             if (id === undefined) {
                 return
             }
-            let jqEl = $("."+id);
-            jqEl.hide();
-            jqEl.find("option[value!='']").remove();
+
+            $('.'+id).hide();
+
+            elements[id].find("option[value!='']").remove();
         }
     }
 
-    function fillSelects(data){
-        $.each(data, function(idx, item) {
-            let jqEl = $("#"+categoryToSelectorMap[item.type]);
-            let text = item.description ? (item.value + " " + item.description)  : item.value;
+    function fillSelects(parent){
+        $.getJSON( api_url, {"parent": parent}, function( data ) {
+            $.each(data, function(idx, item) {
+                let jqEl = elements[levelTypeToSelectorMap[item.type]];
+                let text = (item.description ? (item.value + " - " + item.description)  : item.value);
+                jqEl.append(
+                    $('<option>',{ "value" : item.id, "data-value": item.value, "data-description": item.description, "data-type": item.type }).text(text));
+                $("."+levelTypeToSelectorMap[item.type]).show();
 
-            if (item.type === "TAG"){
-                jqEl.append($('<option>', { "value" : item.id, "data-description": item.description }).text(text));
-            }else{
-                jqEl.append($('<option>', { "value" : item.id }).text(text));
-            }
-
-            $("."+categoryToSelectorMap[item.type]).show();
-
+            });
         });
     }
 
@@ -96,27 +121,39 @@
 
         hideAndClearChildrenSelects(self.id);
 
-        if (selected.data("description")){
-            $("#tag-display").text(selected.data("description")).show();
-            return
-        }
-
         if (!parent){
             return
         }
-        $.getJSON( "/api/levels/", {"parent": parent}, function( data ) {
-            fillSelects(data);
-        });
+
+        if (selected.data("type") === "TAG"){
+            let standard = elements["select-standard"].find('option:selected').text();
+            let code = selected.data("value");
+            let description = selected.data("description");
+            let grade = elements["select-grade"].find('option:selected[value!=""]').text();
+            let learning_domain = elements["select-domain"].find('option:selected[value!=""]').text();
+            let html = "<strong>"+standard+"</strong><br>Code: <strong>"+code+"</strong>";
+
+            if (grade){
+                html += "<br>Grade: <strong>"+grade+"</strong>";
+            }
+            if (learning_domain){
+                html += "<br>Learning Domain: <strong>"+learning_domain+"</strong>";
+            }
+            if (description) {
+                html += "<br>"+description;
+            }
+
+            elements["tag-display"].html(html);
+            elements["tag-display"].css("visibility", "visible");
+            return
+        }
+
+        fillSelects(parent);
     }
 
     $(function () {
         $("select").change(onChange);
-        $.getJSON( "/api/levels/", function( data ) {
-            $.each(data, function(idx, item) {
-                $("#select-standard").append($('<option>', { "value" : item.id }).text(item.value));
-            });
-        });
-
+        fillSelects(null);
     });
 </script>
 

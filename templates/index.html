@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Project</title>
+
+    <style>
+        .hidden{
+            display: none;
+        }
+        select{
+            display: block;
+        }
+        .tag-display{
+            background-color: bisque;
+        }
+    </style>
+</head>
+<body>
+
+<div id="tag-display" class="tag-display hidden"></div>
+
+<label for="select-standard" class="select-standard">Standard</label>
+<select id="select-standard" class="select-standard">
+    <option value="">Select a Standard</option>
+</select>
+
+<label for="select-grade" class="select-grade hidden">Grade</label>
+<select id="select-grade" class="select-grade hidden">
+    <option value="">Select a Grade</option>
+</select>
+
+<label for="select-domain" class="select-domain hidden">Domain</label>
+<select id="select-domain" class="select-domain hidden">
+    <option value="">Select a Domain</option>
+</select>
+
+<label for="select-tag" class="select-tag hidden">Tag</label>
+<select id="select-tag" class="select-tag hidden" data-attr="">
+    <option value="">Select a Tag</option>
+</select>
+
+
+<script src="http://code.jquery.com/jquery-3.3.1.min.js"
+        integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+        crossorigin="anonymous"></script>
+<script>
+    let selectHierarchyMap = {
+        "select-standard": "select-grade",
+        "select-grade": "select-domain",
+        "select-domain": "select-tag"
+    };
+
+    let categoryToSelectorMap = {
+        "STANDARD": "select-standard",
+        "GRADE": "select-grade",
+        "LEARNING_DOMAIN": "select-domain",
+        "TAG": "select-tag"
+    };
+
+
+    function hideAndClearChildrenSelects(id) {
+        $("#tag-display").text("").hide();
+
+        while (true){
+            id = selectHierarchyMap[id];
+            if (id === undefined) {
+                return
+            }
+            let jqEl = $("."+id);
+            jqEl.hide();
+            jqEl.find("option[value!='']").remove();
+        }
+    }
+
+    function fillSelects(data){
+        $.each(data, function(idx, item) {
+            let jqEl = $("#"+categoryToSelectorMap[item.category]);
+            let text = item.description ? (item.value + " " + item.description)  : item.value;
+
+            if (item.category === "TAG"){
+                jqEl.append($('<option>', { "value" : item.id, "data-description": item.description }).text(text));
+            }else{
+                jqEl.append($('<option>', { "value" : item.id }).text(text));
+            }
+
+            $("."+categoryToSelectorMap[item.category]).show();
+
+        });
+    }
+
+    function onChange(ev) {
+        let self = this;
+        let selected = $(this).find("option:selected");
+        let parent = selected.val();
+
+        hideAndClearChildrenSelects(self.id);
+
+        if (selected.data("description")){
+            $("#tag-display").text(selected.data("description")).show();
+            return
+        }
+
+        if (!parent){
+            return
+        }
+        $.getJSON( "/api/levels/", {"parent": parent}, function( data ) {
+            fillSelects(data);
+        });
+    }
+
+    $(function () {
+        $("select").change(onChange);
+        $.getJSON( "/api/levels/", function( data ) {
+            $.each(data, function(idx, item) {
+                $("#select-standard").append($('<option>', { "value" : item.id }).text(item.value));
+            });
+        });
+
+    });
+</script>
+
+</body>
+</html>

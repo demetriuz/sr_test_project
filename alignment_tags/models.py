@@ -20,9 +20,6 @@ class Level(models.Model):
     class Meta:
         unique_together = ('value', 'parent')
 
-    def __str__(self):
-        return f'{self.type} - {self.value}'
-
 
 class Tag(models.Model):
     parent_level = models.ForeignKey(Level, on_delete=models.CASCADE)

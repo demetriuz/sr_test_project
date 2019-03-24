@@ -75,16 +75,16 @@
 
     function fillSelects(data){
         $.each(data, function(idx, item) {
-            let jqEl = $("#"+categoryToSelectorMap[item.category]);
+            let jqEl = $("#"+categoryToSelectorMap[item.type]);
             let text = item.description ? (item.value + " " + item.description)  : item.value;
 
-            if (item.category === "TAG"){
+            if (item.type === "TAG"){
                 jqEl.append($('<option>', { "value" : item.id, "data-description": item.description }).text(text));
             }else{
                 jqEl.append($('<option>', { "value" : item.id }).text(text));
             }
 
-            $("."+categoryToSelectorMap[item.category]).show();
+            $("."+categoryToSelectorMap[item.type]).show();
 
         });
     }

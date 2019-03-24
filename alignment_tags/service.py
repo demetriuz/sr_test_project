@@ -1,14 +1,23 @@
 from typing import List, Optional
 
-from . import models as m
-from . import dtos
+from aligment_tags_domain.idao import IAlignmentTagsDAO
+from aligment_tags_domain import dtos
+from aligment_tags_domain import models as m
+from aligment_tags_domain.iservice import IAlignmentTagsService
 
 
-class AlignmentTagsService:
-    def get_children(self, parent_id: Optional[int]=None) -> List[dtos.LevelDTO]:
+class AlignmentTagsService(IAlignmentTagsService):
+    def __init__(self, dao: IAlignmentTagsDAO):
+        self.dao = dao
 
-        attrs_qs = m.Level.objects.filter(parent_id=parent_id, type__is_internal=False)
-        tags_qs = m.Tag.objects.filter(parent_level_id=parent_id)
+    def get_levels(self, parent_id: Optional[int] = None) -> List[dtos.LevelItemDTO]:
+        return self.dao.get_levels(parent_id)
 
-        return [dtos.LevelDTO(id=o.id, value=o.value, category=o.type.name, description=None) for o in attrs_qs] + \
-               [dtos.LevelDTO(id=o.id, value=o.code, category='TAG', description=o.description) for o in tags_qs]
+    def get_or_create_level(self, level: m.Level) -> (m.Level, bool):
+        return self.dao.get_or_create_level(level)
+
+    def get_or_create_level_type(self, level_type: m.LevelType) -> (m.LevelType, bool):
+        return self.dao.get_or_create_level_type(level_type)
+
+    def create_tag(self, tag: m.Tag) -> m.Tag:
+        return self.dao.create_tag(tag)

@@ -1,9 +1,11 @@
 import attr
 
+TAG_TYPE = 'TAG'
+
 
 @attr.s
-class LevelDTO:
+class LevelItemDTO:
     id = attr.ib()
     value = attr.ib()
     description = attr.ib()
-    category = attr.ib()
+    type = attr.ib()

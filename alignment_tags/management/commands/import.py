@@ -1,22 +1,18 @@
-from typing import List
+import csv
 
 from django.core.management.base import LabelCommand
-import csv
-from ...settings import ALIGNMENT_TAGS_CATEGORIES_HIERARCHY
-from ... import models as m
+from django.apps.registry import apps
 
-
-def get_parent_attr(attrs: List[m.Level]):
-    for attr in reversed(attrs):
-        if attr.type.is_internal:
-            continue
-        return attr
+from aligment_tags_domain.iservice import IAlignmentTagsService
+from aligment_tags_domain import models as m
 
 
 class Command(LabelCommand):
     help = 'Import data from CSV'
 
     def handle_label(self, label, **options):
+        service = apps.get_app_config('alignment_tags').get_service()  # type: IAlignmentTagsService
+
         with open(label, newline='') as csvfile:
             reader = csv.reader(csvfile)
 
@@ -29,33 +25,37 @@ class Command(LabelCommand):
                 else:
                     res.append(row)
 
-        # add categories
         types = []
 
-        # TODO: check headers
         if headers[-2] != 'FULL_CODE' and headers[-1] != 'DESCRIPTION':
             raise Exception('Invalid format')
 
+        known_level_types = [level_type.name for level_type in m.LevelTypes]
+
         for header in headers:
-            if header not in ALIGNMENT_TAGS_CATEGORIES_HIERARCHY:
-                type_, _, = m.LevelType.objects.get_or_create(name=header, is_internal=True)
+            if header in known_level_types:
+                type_to_create = m.LevelType(name=header)
             else:
-                type_, _, = m.LevelType.objects.get_or_create(name=header)
+                type_to_create = m.LevelType(name=header, is_internal=True)
+
+            type_, _ = service.get_or_create_level_type(type_to_create)
             types.append(type_)
 
-        # create attrs
         for row in res:
-
-            prev_attrs = []
+            maybe_parent_level = None
             for idx, cell in enumerate(row):
-
-                # TODO: not always get_or_create
                 type_ = types[idx]
+
                 if type_.is_internal:
-                    attr, _ = m.Level.objects.get_or_create(type=types[idx], value=cell)
+                    level_to_create = m.Level(type_id=types[idx].id, value=cell)
+                    level, _ = service.get_or_create_level(level_to_create)
                 else:
-                    attr, _ = m.Level.objects.get_or_create(type=types[idx], value=cell, parent=get_parent_attr(prev_attrs))
+                    level_to_create = m.Level(type_id=types[idx].id,
+                                                 value=cell,
+                                                 parent_id=maybe_parent_level.id if maybe_parent_level else None)
+                    level, _ = service.get_or_create_level(level_to_create)
+                    maybe_parent_level = level
 
-                prev_attrs.append(attr)
-
-            m.Tag.objects.create(code=row[-2], description=row[-1], parent_level=get_parent_attr(prev_attrs))
+            service.create_tag(m.Tag(parent_level_id=maybe_parent_level.id,
+                                     code=row[-2],
+                                     description=row[-1]))

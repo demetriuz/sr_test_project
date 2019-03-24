@@ -6,9 +6,7 @@ services:
     command:
       bash -c "./manage.py makemigrations &&
       ./manage.py migrate &&
-      ./manage.py import ./fixtures/example-data-01.csv &&
-      ./manage.py import ./fixtures/example-data-02.csv &&
-      ./manage.py import ./fixtures/example-data-03.csv &&
+      ./manage.py import ./fixtures/example-data-01.csv ./fixtures/example-data-02.csv ./fixtures/example-data-03.csv &&
       ./manage.py runserver 0.0.0.0:8000"
     ports:
       - "8080:8000"

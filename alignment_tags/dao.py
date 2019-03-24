@@ -1,8 +1,12 @@
 from typing import List
 
+from django.db import IntegrityError
+
 from aligment_tags_domain import dtos
 from aligment_tags_domain.idao import IAlignmentTagsDAO
 from aligment_tags_domain import models as domain_models
+from aligment_tags_domain import errors
+from .utils import map_errors
 from . import models as m
 
 
@@ -23,6 +27,9 @@ class AlignmentTagsDAO(IAlignmentTagsDAO):
         level.id = level_.id
         return level, is_created
 
+    @map_errors({
+        IntegrityError: errors.DuplicateTagError
+    })
     def create_tag(self, tag: domain_models.Tag) -> domain_models.Tag:
         tag_ = m.Tag.objects.create(parent_level_id=tag.parent_level_id, code=tag.code, description=tag.description)
         tag.id = tag_.id

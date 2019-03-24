@@ -4,7 +4,7 @@ from django.core.management.base import LabelCommand
 from django.apps.registry import apps
 
 from aligment_tags_domain.iservice import IAlignmentTagsService
-from aligment_tags_domain import models as m
+from aligment_tags_domain import models as m, errors
 
 
 class Command(LabelCommand):
@@ -44,18 +44,24 @@ class Command(LabelCommand):
         for row in res:
             maybe_parent_level = None
             for idx, cell in enumerate(row):
-                type_ = types[idx]
+                    type_ = types[idx]
 
-                if type_.is_internal:
-                    level_to_create = m.Level(type_id=types[idx].id, value=cell)
-                    level, _ = service.get_or_create_level(level_to_create)
-                else:
-                    level_to_create = m.Level(type_id=types[idx].id,
-                                                 value=cell,
-                                                 parent_id=maybe_parent_level.id if maybe_parent_level else None)
-                    level, _ = service.get_or_create_level(level_to_create)
-                    maybe_parent_level = level
+                    if type_.is_internal:
+                        level_to_create = m.Level(type_id=types[idx].id, value=cell)
+                        level, _ = service.get_or_create_level(level_to_create)
+                    else:
+                        level_to_create = m.Level(type_id=types[idx].id,
+                                                  value=cell,
+                                                  parent_id=maybe_parent_level.id if maybe_parent_level else None)
+                        level, _ = service.get_or_create_level(level_to_create)
+                        maybe_parent_level = level
 
-            service.create_tag(m.Tag(parent_level_id=maybe_parent_level.id,
-                                     code=row[-2],
-                                     description=row[-1]))
+            try:
+                tag = service.create_tag(m.Tag(parent_level_id=maybe_parent_level.id,
+                                         code=row[-2],
+                                         description=row[-1]))
+                print('Tag added successfully:', tag)
+
+            except errors.DuplicateTagError:
+                print('Duplicate Tag:', row)
+                continue
